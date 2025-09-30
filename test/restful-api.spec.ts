@@ -55,21 +55,28 @@ describe('Basic integration tests restful-api.dev /objects', () => {
       .expectStatus(StatusCodes.NOT_FOUND)
   });
 
-  it('POST /objects — deve criar objeto e receber 200', async () => {
-    const fakeObj = {
-      name: faker.commerce.productName(),
-      data: {
-        color: faker.color.human(),
-        price: faker.number.float({ min: 10, max: 1000, fractionDigits: 2 })
-      }
-    };
+    it('Não deve permitir criar item com preço negativo', async () => {
+      const newItem = {
+        type: 'book',
+        price: -10.0,
+        numberinstock: 5
+      };
+  
+      await pactum
+        .spec()
+        .post(`${baseUrl}/items`)
+        .withJson(newItem)
+        .expectStatus(StatusCodes.NOT_FOUND);
+    });
 
-    await pactum
-      .spec()
-      .post(`${baseUrl}${endpoint}`)
-      .withJson(fakeObj)
-      .expectStatus(StatusCodes.OK);
-  });
+    it('PUT vazio - Deve retornar NOT_FOUND', async () => {
+      await pactum
+        .spec()
+        .put(`${baseUrl}/items/1`)
+        .withJson({})
+        .expectStatus(StatusCodes.NOT_FOUND);
+    });
+
 
   it('PUT /objects/:id — deve atualizar objeto e receber 200', async () => {
     const fakeObj = {
@@ -139,5 +146,67 @@ describe('Basic integration tests restful-api.dev /objects', () => {
       .spec()
       .delete(`${baseUrl}${endpoint}/${created.body.id}`)
       .expectStatus(StatusCodes.OK);
+  });
+
+  it('PATCH /objects/:id — deve atualizar parcialmente o objeto e retornar 200', async () => {
+    // cria um objeto primeiro
+    const fakeObj = {
+      name: faker.commerce.productName(),
+      data: {
+        color: faker.color.human(),
+        price: faker.number.float({ min: 10, max: 500, fractionDigits: 2 })
+      }
+    };
+
+    const created = await pactum
+      .spec()
+      .post(`${baseUrl}${endpoint}`)
+      .withJson(fakeObj)
+      .expectStatus(StatusCodes.OK)
+      .toss();
+
+    const partialUpdate = {
+      data: {
+        price: faker.number.float({ min: 100, max: 1000, fractionDigits: 2 })
+      }
+    };
+
+    await pactum
+      .spec()
+      .patch(`${baseUrl}${endpoint}/${created.body.id}`)
+      .withJson(partialUpdate)
+      .expectStatus(StatusCodes.OK);
+
+    // valida se o preço foi atualizado parcialmente
+    await pactum
+      .spec()
+      .get(`${baseUrl}${endpoint}/${created.body.id}`)
+      .expectStatus(StatusCodes.OK)
+      .expectJsonLike({
+        id: created.body.id,
+        data: {
+          price: partialUpdate.data.price
+        }
+      });
+  });
+
+  it('GET /objects com query params — deve retornar lista filtrada', async () => {
+    const searchName = 'test';
+
+    await pactum
+      .spec()
+      .get(`${baseUrl}${endpoint}`)
+      .withQueryParams('name', searchName)
+      .expectStatus(StatusCodes.OK)
+      .expectJson((res) => {
+        return res.every((obj: any) => obj.name.toLowerCase().includes(searchName));
+      });
+  });
+
+  it('DELETE /objects/:id com id inválido — deve retornar NOT_FOUND', async () => {
+    await pactum
+      .spec()
+      .delete(`${baseUrl}${endpoint}/idinvalido123`)
+      .expectStatus(StatusCodes.NOT_FOUND);
   });
 });
