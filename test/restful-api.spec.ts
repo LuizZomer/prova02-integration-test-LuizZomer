@@ -7,6 +7,10 @@ beforeAll(() => {
   pactum.reporter.add(SimpleReporter);
 });
 
+afterAll(() => {
+  pactum.reporter.end();
+});
+
 describe('Basic integration tests restful-api.dev /objects', () => {
   const baseUrl = 'https://api.restful-api.dev';
   const endpoint = '/objects';
