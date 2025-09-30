@@ -190,18 +190,15 @@ describe('Basic integration tests restful-api.dev /objects', () => {
       });
   });
 
-  it('GET /objects com query params — deve retornar lista filtrada', async () => {
-    const searchName = 'test';
-
+  it('GET /objects/:id — deve retornar 404 para ID inexistente', async () => {
+    const nonExistentId = 'id-que-nao-existe-123';
+  
     await pactum
       .spec()
-      .get(`${baseUrl}${endpoint}`)
-      .withQueryParams('name', searchName)
-      .expectStatus(StatusCodes.OK)
-      .expectJson((res) => {
-        return res.every((obj: any) => obj.name.toLowerCase().includes(searchName));
-      });
+      .get(`${baseUrl}${endpoint}/${nonExistentId}`)
+      .expectStatus(StatusCodes.NOT_FOUND);
   });
+  
 
   it('DELETE /objects/:id com id inválido — deve retornar NOT_FOUND', async () => {
     await pactum
