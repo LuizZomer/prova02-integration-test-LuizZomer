@@ -7,6 +7,10 @@ beforeAll(() => {
   pactum.reporter.add(SimpleReporter);
 });
 
+afterAll(() => {
+  pactum.reporter.end();
+});
+
 describe('Basic integration tests restful-api.dev /objects', () => {
   const baseUrl = 'https://api.restful-api.dev';
   const endpoint = '/objects';
@@ -190,16 +194,23 @@ describe('Basic integration tests restful-api.dev /objects', () => {
       });
   });
 
-  it('GET /objects/:id — deve retornar 404 para ID inexistente', async () => {
-    const nonExistentId = 'id-que-nao-existe-123';
+  it('POST /objects — deve aceitar objeto com campos extras inesperados', async () => {
+    const fakeObjWithExtra = {
+      name: faker.commerce.productName(),
+      data: {
+        color: faker.color.human(),
+        price: faker.number.float({ min: 10, max: 1000, fractionDigits: 2 })
+      },
+      extraField: 'campo não esperado', 
+    };
   
     await pactum
       .spec()
-      .get(`${baseUrl}${endpoint}/${nonExistentId}`)
-      .expectStatus(StatusCodes.NOT_FOUND);
+      .post(`${baseUrl}${endpoint}`)
+      .withJson(fakeObjWithExtra)
+      .expectStatus(StatusCodes.OK);
   });
   
-
   it('DELETE /objects/:id com id inválido — deve retornar NOT_FOUND', async () => {
     await pactum
       .spec()
