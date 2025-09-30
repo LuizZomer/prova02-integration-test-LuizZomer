@@ -48,6 +48,13 @@ describe('Basic integration tests restful-api.dev /objects', () => {
       });
   });
 
+  it('GET /objects/:id — deve dar um NOT FOUND', async () => {
+    await pactum
+      .spec()
+      .get(`${baseUrl}${endpoint}/lkjgkjgklfdjgkdfgjk`)
+      .expectStatus(StatusCodes.NOT_FOUND)
+  });
+
   it('POST /objects — deve criar objeto e receber 200', async () => {
     const fakeObj = {
       name: faker.commerce.productName(),
